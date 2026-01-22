@@ -1,0 +1,1 @@
+I made this as a pet project to get better at coding and understand how things work. I found myself needing a dex tracker for a Pokémon fangame named Pokémon Reborn. There are trackers out there for this game, but I didn't find any that included the mods I play with: The Allgen mod. Ergo, I made this. 
