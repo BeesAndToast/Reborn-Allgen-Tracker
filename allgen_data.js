@@ -73,7 +73,8 @@ const allGenData = [
     "name": "Galarian Zigzagoon",
     "locations": [
       "Lower Peridot Ward (Event) [Gulpin Event, Mono Normal/Dark]",
-      "Not Catchable (Evolution) [Breed Galarian Linoone or Obstagoon]"
+      "Not Catchable (Evolution) [Breed Galarian Linoone or Obstagoon]",
+      "Trash Event in Peridot Ward (Event)"
     ],
     "order": 15
   },
@@ -564,7 +565,8 @@ const allGenData = [
   {
     "name": "Galarian Meowth",
     "locations": [
-      "Ametrine City (Grass)"
+      "Ametrine City (Grass)",
+      "Jasper Police Officer Egg (Egg)"
     ],
     "order": 195
   },
@@ -650,7 +652,8 @@ const allGenData = [
   {
     "name": "Galarian Corsola",
     "locations": [
-      "Coral Lighthouse Renovated (Cave)"
+      "Coral Lighthouse Renovated (Cave)",
+      "Jasper Police Officer Egg (Egg)"
     ],
     "order": 240
   },
@@ -679,7 +682,8 @@ const allGenData = [
   {
     "name": "Hisuian Qwilfish",
     "locations": [
-      "Celestinine Mountain (Super Rod) [1F, 2F, 3F, B1F, B2F\n\nEvolve by lvling up knowing Barb Barrage]"
+      "Celestinine Mountain (Super Rod) [1F, 2F, 3F, B1F, B2F\n\nEvolve by lvling up knowing Barb Barrage]",
+      "Jasper Police Officer Egg (Egg)"
     ],
     "order": 240
   },
@@ -1777,13 +1781,6 @@ const allGenData = [
     "order": 99999
   },
   {
-    "name": "Galar-Zigzagoon",
-    "locations": [
-      "Trash Event in Peridot Ward (Event)"
-    ],
-    "order": 99999
-  },
-  {
     "name": "Ducklett",
     "locations": [
       "Obsidia Slums Lost Egg (Event)"
@@ -1847,7 +1844,7 @@ const allGenData = [
     "order": 99999
   },
   {
-    "name": "Hisui Basculin",
+    "name": "Hisuian Basculin",
     "locations": [
       "Onyx Ward Rescue Egg (Egg)"
     ],
@@ -1980,13 +1977,6 @@ const allGenData = [
     "order": 99999
   },
   {
-    "name": "Galar Meowth",
-    "locations": [
-      "Jasper Police Officer Egg (Egg)"
-    ],
-    "order": 99999
-  },
-  {
     "name": "Nacli",
     "locations": [
       "Jasper Police Officer Egg (Egg)"
@@ -1994,21 +1984,7 @@ const allGenData = [
     "order": 99999
   },
   {
-    "name": "Galar Corsola",
-    "locations": [
-      "Jasper Police Officer Egg (Egg)"
-    ],
-    "order": 99999
-  },
-  {
-    "name": "Hisui Qwilfish",
-    "locations": [
-      "Jasper Police Officer Egg (Egg)"
-    ],
-    "order": 99999
-  },
-  {
-    "name": "Galar Darumaka",
+    "name": "Galarian Darumaka",
     "locations": [
       "Jasper Police Officer Egg (Egg)"
     ],

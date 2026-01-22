@@ -11,8 +11,37 @@ starters = [
     "Sprigatito", "Fuecoco", "Quaxly"
 ]
 
-# 2. BLOCKLIST (The Kill List)
-# Any name containing these words will be deleted.
+# 2. NAME CORRECTIONS
+# Format: "Name in CSV": "Official Name"
+corrections = {
+    # Typos
+    "Cottenee": "Cottonee",
+    "Ninetails": "Ninetales",
+    
+    # Galar -> Galarian
+    "Galar Meowth": "Galarian Meowth",
+    "Galar Ponyta": "Galarian Ponyta",
+    "Galar Zigzagoon": "Galarian Zigzagoon",
+    "Galar-Zigzagoon": "Galarian Zigzagoon",
+    "Galar Darumaka": "Galarian Darumaka",
+    "Galar Farfetch'd": "Galarian Farfetch'd",
+    "Galar Stunfisk": "Galarian Stunfisk",
+    "Galar Corsola": "Galarian Corsola",
+    "Galar Yamask": "Galarian Yamask",
+    
+    # Hisui -> Hisuian
+    "Hisui Qwilfish": "Hisuian Qwilfish",   # <--- The Fix
+    "Hisui Basculin": "Hisuian Basculin",
+    "Hisui Growlithe": "Hisuian Growlithe",
+    "Hisui Arcanine": "Hisuian Arcanine",
+    "Hisui Voltorb": "Hisuian Voltorb",
+    "Hisui Electrode": "Hisuian Electrode",
+    "Hisui Sneasel": "Hisuian Sneasel",
+    "Hisui Zorua": "Hisuian Zorua",
+    "Hisui Zoroark": "Hisuian Zoroark"
+}
+
+# 3. JUNK FILTER
 blocklist_keywords = [
     "pokémon eggs", "pokemon eggs", "encounters", 
     "egg chances", "mystery egg", "info", "event", 
@@ -21,7 +50,7 @@ blocklist_keywords = [
     "evolution section", "new items", "check for items"
 ]
 
-# 3. GYM ORDER MAPPING
+# 4. GYM ORDER MAPPING
 gym_order_map = {
     '001 - Julia': 15, '002 - Florinia': 30, '003 - Corey': 45,
     '004 - Shelly': 60, '005 - Shade': 75, '006 - Kiki': 90,
@@ -38,16 +67,21 @@ def add_pokemon(name, location, order=99999):
     name = str(name).replace('*', '').strip()
     
     if not name or name.lower() == 'nan': return
+
+    # --- APPLY CORRECTIONS ---
+    if name in corrections:
+        # print(f"Fixing: {name} -> {corrections[name]}")
+        name = corrections[name]
     
-    # --- NUCLEAR JUNK FILTER ---
+    # --- JUNK FILTER ---
     lower_name = name.lower()
     for bad_word in blocklist_keywords:
         if bad_word in lower_name:
-            # print(f"Blocking junk entry: {name}") 
             return
 
     location = str(location).strip()
     
+    # --- MERGE INTO EXISTING ENTRY ---
     existing = next((item for item in allgen_list if item["name"] == name), None)
     if existing:
         if location not in existing["locations"]: existing["locations"].append(location)
@@ -62,6 +96,8 @@ try:
     for index, row in df_loc.iterrows():
         name = str(row['Pokemon']).strip()
         
+        if name in ["Pokemon", "Method", "Location"]: continue
+
         is_starter = name in starters
         gym_text = str(row['Before Gym']).strip()
         order_num = 1 if is_starter else 99999
@@ -97,14 +133,12 @@ try:
     for index, row in df_evt.iterrows():
         if index < 2: continue 
         
-        # Eggs
         egg_loc = str(row['Unnamed: 1']).strip()
         if egg_loc.lower() != 'nan':
             mons = [row['Unnamed: 2'], row['Unnamed: 3']]
             for m in mons:
                 add_pokemon(m, f"{egg_loc} (Egg)", 99999)
 
-        # Events
         evt_loc = str(row['Unnamed: 5']).strip()
         if evt_loc.lower() != 'nan':
             mon_string = str(row['Unnamed: 6'])
@@ -120,4 +154,4 @@ allgen_list.sort(key=lambda x: x['order'])
 with open('allgen_data.js', 'w', encoding='utf-8') as f:
     f.write("const allGenData = " + json.dumps(allgen_list, indent=2) + ";")
 
-print(f"Success! Removed 'Evolution Section' and other junk.")
+print(f"Success! Renamed 'Hisui Qwilfish' -> 'Hisuian Qwilfish' (and others).")

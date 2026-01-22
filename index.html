@@ -8,40 +8,23 @@
         .search-box { padding: 12px; width: 100%; max-width: 600px; margin: 0 auto 20px auto; display: block; font-size: 16px; border-radius: 8px; border: none; }
         .container { max-width: 800px; margin: 0 auto; min-height: 80vh; }
         .pokemon-item { background-color: #333; margin-bottom: 10px; padding: 10px 15px; border-radius: 8px; display: flex; flex-direction: column; }
-        
         .header { display: flex; align-items: center; cursor: pointer; min-height: 50px; }
         .header:hover { opacity: 0.9; }
-        
         input[type="checkbox"] { transform: scale(1.5); margin-right: 15px; cursor: pointer; }
 
-        /* --- SPRITE WINDOW --- */
         .sprite-wrapper {
-            position: relative;
-            width: 50px;
-            height: 50px;
-            margin-right: 15px;
-            overflow: hidden; 
-            border-radius: 4px;
-            background-color: #222; 
-            flex-shrink: 0;
-            cursor: move; 
-            border: 1px solid #444;
+            position: relative; width: 50px; height: 50px; margin-right: 15px;
+            overflow: hidden; border-radius: 4px; background-color: #222; 
+            flex-shrink: 0; cursor: move; border: 1px solid #444;
         }
-
         .sprite-img {
-            position: absolute;
-            width: 200%; /* Default Zoom */
-            image-rendering: pixelated; 
-            transition: transform 0.05s linear; /* Very fast for responsive scrolling */
-            top: 0;
-            left: 0;
-            transform-origin: top left;
+            position: absolute; width: 200%; image-rendering: pixelated; 
+            transition: transform 0.05s linear; top: 0; left: 0; transform-origin: top left;
         }
 
         .icon-fallback {
-            width: 40px; height: 40px; margin-right: 15px;
-            background-color: #444; color: #888; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
+            width: 40px; height: 40px; margin-right: 15px; background-color: #444; color: #888; 
+            border-radius: 50%; display: flex; align-items: center; justify-content: center; 
             font-weight: bold; font-size: 1.2em;
         }
 
@@ -54,7 +37,6 @@
 
         .name { font-size: 1.3em; font-weight: bold; flex-grow: 1; display: flex; align-items: center;}
         .caught { color: #888; text-decoration: line-through; opacity: 0.7; }
-        
         .locations { margin-top: 10px; padding-left: 0; display: none; border-top: 1px solid #555; padding-top: 5px; }
         .loc-wrapper { border-bottom: 1px solid #444; padding: 8px 5px; }
         .loc-wrapper:last-child { border-bottom: none; }
@@ -67,11 +49,9 @@
             cursor: pointer; white-space: nowrap; transition: all 0.2s;
         }
         .note-toggle-btn:hover { background-color: #f0c040; color: #222; }
-
         .note-content {
-            display: none; margin-top: 8px; margin-left: 15px;
-            background-color: #2a2a2a; color: #ddd; padding: 10px;
-            border-left: 3px solid #f0c040; font-size: 0.9em;
+            display: none; margin-top: 8px; margin-left: 15px; background-color: #2a2a2a; color: #ddd; 
+            padding: 10px; border-left: 3px solid #f0c040; font-size: 0.9em; 
             white-space: pre-wrap; border-radius: 0 4px 4px 0; line-height: 1.4;
         }
 
@@ -90,6 +70,8 @@
 
     <script src="checklist_data.js"></script>
     <script src="allgen_data.js"></script>
+    <script src="sprite_offsets.js"></script>
+    <script src="pokedex_order.js"></script>
 
     <script>
         const FORM_PREFIXES = [
@@ -98,9 +80,69 @@
             "Alola ", "Paldea ", "Partner ", "Blood-"
         ];
 
+        // --- NAME CORRECTIONS ---
+        // Normalizes data names to Official Pokedex names for sorting/images
+        const nameCorrections = {
+            "Cosmeon": "Cosmoem",
+            "Farfetchd": "Farfetch'd",
+            "Flabebe": "Flabébé",
+            "Galarian Farfetch'd": "Farfetch'd", // Merge into base for sorting
+            "Galar Meowth": "Galarian Meowth",
+            "Great-Tusk": "Great Tusk", "Iron-Treads": "Iron Treads",
+            "Iron-Valiant": "Iron Valiant", "Roaring-Moon": "Roaring Moon",
+            "Scream-Tail": "Scream Tail", "Brute-Bonnet": "Brute Bonnet",
+            "Flutter-Mane": "Flutter Mane", "Slither-Wing": "Slither Wing",
+            "Sandy-Shocks": "Sandy Shocks", "Iron-Bundle": "Iron Bundle",
+            "Iron-Hands": "Iron Hands", "Iron-Jugulis": "Iron Jugulis",
+            "Iron-Moth": "Iron Moth", "Iron-Thorns": "Iron Thorns",
+            "Walking-Wake": "Walking Wake", "Iron-Leaves": "Iron Leaves",
+            "Gouging-Fire": "Gouging Fire", "Raging-Bolt": "Raging Bolt",
+            "Iron-Boulder": "Iron Boulder", "Iron-Crown": "Iron Crown",
+            "Hakamoo": "Hakamo-o",
+            "Hattena": "Hatenna",
+            "Hooh": "Ho-Oh", "Ho-oh": "Ho-Oh",
+            "Kommoo": "Kommo-o",
+            "Mime Jr": "Mime Jr.",
+            "Mr Mime": "Mr. Mime", "Mr-Mime": "Mr. Mime",
+            "Mr-Rime": "Mr. Rime",
+            "Nidoran F": "Nidoran-F",
+            "Nidoran M": "Nidoran-M",
+            "Porygon-z": "Porygon-Z",
+            "Sirfetchd": "Sirfetch'd",
+            "Swinup": "Swinub",
+            "Tapubulu": "Tapu Bulu",
+            "Tapufini": "Tapu Fini",
+            "Tapukoko": "Tapu Koko",
+            "Tapulele": "Tapu Lele",
+            "Toxel / Toxtricity": "Toxel",
+            "Type Null": "Type Null", "Type: Null": "Type Null",
+            "White-Striped Basculin": "Basculin"
+        };
+
+        // --- BANNED ITEMS ---
+        // Items to exclude from the visual tracker
+        const bannedNames = [
+            "Link Stone", "Stone Evolutions", "Fire Stone Evolution",
+            "Water Stone Evolution", "Leaf Stone Evolution", 
+            "Moon Stone Evolution", "Elemental Stone Evolution",
+            "Evolution"
+        ];
+
+        function cleanName(name) {
+            if (nameCorrections[name]) return nameCorrections[name];
+            // Formatting Fixes
+            if (name.includes("Mr.") && !name.includes("Mr. ")) return name.replace("Mr.", "Mr. ");
+            if (name.startsWith("Iron-") || name.startsWith("Great-") || name.startsWith("Scream-")) {
+                return name.replace("-", " "); 
+            }
+            return name;
+        }
+
         const errors = [];
         if (typeof pokemonData === 'undefined') errors.push("checklist_data.js failed to load!");
         if (typeof allGenData === 'undefined') errors.push("allgen_data.js failed to load!");
+        if (typeof pokedexOrder === 'undefined') console.warn("pokedex_order.js not found. Sorting by ID might fail.");
+
         if (errors.length > 0) {
             const errDiv = document.getElementById('error-box');
             errDiv.innerHTML = "⚠️ ISSUES DETECTED:<br>" + errors.join("<br>");
@@ -108,12 +150,24 @@
         }
 
         const masterList = {};
-        if (typeof pokemonData !== 'undefined') pokemonData.forEach(p => masterList[p.name] = { ...p });
 
+        // 1. Load Base Game Data
+        if (typeof pokemonData !== 'undefined') {
+            pokemonData.forEach(p => {
+                if (bannedNames.includes(p.name)) return;
+                const fixedName = cleanName(p.name);
+                masterList[fixedName] = { ...p, name: fixedName };
+            });
+        }
+
+        // 2. Load Mod Data
         if (typeof allGenData !== 'undefined') {
             allGenData.forEach(p => {
-                if (masterList[p.name]) {
-                    let currentLocs = masterList[p.name].locations;
+                if (bannedNames.includes(p.name)) return;
+                const fixedName = cleanName(p.name);
+                
+                if (masterList[fixedName]) {
+                    let currentLocs = masterList[fixedName].locations;
                     p.locations.forEach(newLoc => {
                         if (newLoc.includes("(Egg)")) {
                             const zoneMatch = newLoc.match(/^([A-Za-z]+)/);
@@ -132,18 +186,57 @@
                         }
                         if (!currentLocs.includes(newLoc)) currentLocs.push(newLoc);
                     });
-                    masterList[p.name].locations = currentLocs;
-                    if (p.order < masterList[p.name].order) masterList[p.name].order = p.order;
+                    masterList[fixedName].locations = currentLocs;
                 } else {
-                    masterList[p.name] = { ...p };
+                    masterList[fixedName] = { ...p, name: fixedName };
                 }
             });
         }
 
+        // 3. Gap Filler
+        if (typeof pokedexOrder !== 'undefined') {
+            for (let rawName in pokedexOrder) {
+                const fixedName = cleanName(rawName);
+                if (!masterList[fixedName]) {
+                    masterList[fixedName] = {
+                        name: fixedName,
+                        locations: ["* No Location Data (Likely Evolution or Transfer)"],
+                        order: 99999
+                    };
+                }
+            }
+        }
+
+        function getDexNumber(name) {
+            // Exact Match
+            if (typeof pokedexOrder !== 'undefined' && pokedexOrder[name]) return pokedexOrder[name];
+            
+            // Check Corrections Mapping
+            for (const [bad, good] of Object.entries(nameCorrections)) {
+                if (good === name && pokedexOrder[bad]) return pokedexOrder[bad];
+                if (name === good && pokedexOrder[good]) return pokedexOrder[good];
+            }
+
+            // Prefix Stripping
+            for (let prefix of FORM_PREFIXES) {
+                if (name.startsWith(prefix)) {
+                    const baseName = name.replace(prefix, "");
+                    const cleanBase = cleanName(baseName);
+                    
+                    if (typeof pokedexOrder !== 'undefined') {
+                        if (pokedexOrder[baseName]) return pokedexOrder[baseName] + 0.1;
+                        if (pokedexOrder[cleanBase]) return pokedexOrder[cleanBase] + 0.1;
+                    }
+                }
+            }
+            return 99999; 
+        }
+
         const fullSortedData = Object.values(masterList).sort((a, b) => {
-            const orderA = (a.order !== undefined) ? a.order : 99999;
-            const orderB = (b.order !== undefined) ? b.order : 99999;
-            return orderA === orderB ? a.name.localeCompare(b.name) : orderA - orderB;
+            const dexA = getDexNumber(a.name);
+            const dexB = getDexNumber(b.name);
+            if (dexA === dexB) return a.name.localeCompare(b.name);
+            return dexA - dexB;
         });
 
         let currentDisplayList = fullSortedData;
@@ -154,20 +247,16 @@
         
         const savedData = JSON.parse(localStorage.getItem('rebornCaught')) || {};
         const shinyData = JSON.parse(localStorage.getItem('rebornShiny')) || {};
-        const spriteSettings = JSON.parse(localStorage.getItem('rebornSpriteSettings')) || {};
+        
+        const localSettings = JSON.parse(localStorage.getItem('rebornSpriteSettings')) || {};
+        const globalSettings = (typeof globalSpriteSettings !== 'undefined') ? globalSpriteSettings : {};
 
-        // --- NEW CENTRAL BRAIN FOR SETTINGS ---
         function getSpriteSettings(name) {
-            // Return Saved settings if they exist
-            if (spriteSettings[name]) {
-                return { ...spriteSettings[name] }; // Return copy
-            }
-            
-            // Otherwise calculate Defaults (Auto-Guess)
+            if (localSettings[name]) return { ...localSettings[name] };
+            if (globalSettings[name]) return { ...globalSettings[name] };
             const defaults = { y: 0, zoom: 200 };
-            
             if (name.includes("Hisui") || name.includes("Galar") || name.includes("Alola")) {
-                defaults.y = 20; // Default offset for forms
+                defaults.y = 20; 
             }
             return defaults;
         }
@@ -190,15 +279,12 @@
                 const header = document.createElement('div');
                 header.className = 'header';
                 
-                // 1. CHECKBOX
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.checked = savedData[p.name] || false;
                 checkbox.onclick = (e) => { e.stopPropagation(); toggleCaught(p.name, checkbox.checked); };
 
-                // 2. SPRITE
                 const settings = getSpriteSettings(p.name);
-
                 const spriteWrapper = document.createElement('div');
                 spriteWrapper.className = 'sprite-wrapper';
                 spriteWrapper.title = 'Scroll: Nudge | Shift+Scroll: Zoom | Click: Cycle';
@@ -206,18 +292,16 @@
                 const spriteImg = document.createElement('img');
                 spriteImg.className = 'sprite-img';
                 
-                let fileName = p.name;
+                let fileName = p.name.replace(":", "").replace(/\.$/, ""); 
                 let isFallback = false;
                 for (let prefix of FORM_PREFIXES) {
                     if (p.name.startsWith(prefix)) {
-                        fileName = p.name.replace(prefix, "");
+                        fileName = p.name.replace(prefix, "").replace(":", "").replace(/\.$/, "");
                         isFallback = true;
                         break;
                     }
                 }
-                
                 spriteImg.src = `icons/${fileName}.png`;
-                
                 spriteImg.onerror = function() {
                     if (!isFallback && p.name !== fileName) {
                         this.src = `icons/${fileName}.png`;
@@ -231,27 +315,21 @@
                     }
                 };
 
-                // Apply Initial State
                 spriteImg.style.width = `${settings.zoom}%`;
                 updateSpritePosition(spriteImg, p.name, shinyData[p.name], settings.y);
 
-                // --- CONTROLS ---
-                
-                // CLICK (Cycle)
                 spriteWrapper.onclick = (e) => {
                     e.stopPropagation();
-                    const s = getSpriteSettings(p.name); // Fetch current state (saved or auto)
+                    const s = getSpriteSettings(p.name);
                     s.y = (s.y + 10) % 110; 
                     saveSettings(p.name, s);
                     updateSpritePosition(spriteImg, p.name, shinyData[p.name], s.y);
                 };
 
-                // WHEEL (Scroll/Zoom)
                 spriteWrapper.onwheel = (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    const s = getSpriteSettings(p.name); // Fetch current state (saved or auto)
-
+                    const s = getSpriteSettings(p.name);
                     if (e.shiftKey) {
                         const delta = e.deltaY > 0 ? -10 : 10;
                         s.zoom = Math.max(50, s.zoom + delta); 
@@ -260,27 +338,24 @@
                         const delta = e.deltaY > 0 ? 2 : -2; 
                         s.y = Math.max(0, Math.min(200, s.y + delta));
                     }
-                    
                     saveSettings(p.name, s);
                     updateSpritePosition(spriteImg, p.name, shinyData[p.name], s.y);
                 };
 
                 spriteWrapper.appendChild(spriteImg);
 
-                // 3. SHINY
                 const shinyBtn = document.createElement('span');
                 shinyBtn.className = 'shiny-btn ' + (shinyData[p.name] ? 'active' : '');
                 shinyBtn.innerHTML = '★';
-                shinyBtn.title = 'Toggle Shiny Sprite';
                 shinyBtn.onclick = (e) => { 
-                    e.stopPropagation(); 
-                    toggleShiny(p.name, shinyBtn, spriteImg); 
+                    e.stopPropagation(); toggleShiny(p.name, shinyBtn, spriteImg); 
                 };
 
-                // 4. NAME & BUTTON
                 const nameSpan = document.createElement('span');
                 nameSpan.className = 'name ' + (checkbox.checked ? 'caught' : '');
-                nameSpan.innerText = p.name;
+                const dexNum = getDexNumber(p.name);
+                const dexLabel = (dexNum < 9000) ? `#${Math.floor(dexNum)} ` : ''; 
+                nameSpan.innerText = dexLabel + p.name;
                 
                 const locBtn = document.createElement('button');
                 locBtn.className = 'show-loc-btn';
@@ -302,7 +377,7 @@
                             if (clean.toLowerCase().includes("egg")) mainText = clean;
                         }
                         if (noteText) noteText = noteText.replace(/\\n/g, '\n');
-                        const noteId = `note-${p.name.replace(/\s+/g, '-')}-${index}`;
+                        const noteId = `note-${p.name.replace(/[^a-zA-Z0-9]/g, '-')}-${index}`;
                         return `
                         <div class="loc-wrapper">
                             <div class="loc-line">
@@ -353,8 +428,8 @@
         }
 
         function saveSettings(name, settings) {
-            spriteSettings[name] = settings;
-            localStorage.setItem('rebornSpriteSettings', JSON.stringify(spriteSettings));
+            localSettings[name] = settings;
+            localStorage.setItem('rebornSpriteSettings', JSON.stringify(localSettings));
         }
 
         function updateSpritePosition(img, name, isShiny, offsetY) {
@@ -372,7 +447,7 @@
             if (isShiny) btnElement.classList.add('active');
             else btnElement.classList.remove('active');
 
-            const s = getSpriteSettings(name); // Use the smart getter!
+            const s = getSpriteSettings(name); 
             updateSpritePosition(imgElement, name, isShiny, s.y);
         }
 
