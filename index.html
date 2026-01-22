@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Reborn Allgen Tracker</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #222; color: #eee; padding: 20px; }
+        h1 { color: #f0c040; text-align: center; }
+        .search-box { padding: 12px; width: 100%; max-width: 600px; margin: 0 auto 20px auto; display: block; font-size: 16px; border-radius: 8px; border: none; }
+        .container { max-width: 800px; margin: 0 auto; min-height: 80vh; }
+        .pokemon-item { background-color: #333; margin-bottom: 10px; padding: 10px 15px; border-radius: 8px; display: flex; flex-direction: column; }
+        
+        .header { display: flex; align-items: center; cursor: pointer; min-height: 50px; }
+        .header:hover { opacity: 0.9; }
+        
+        input[type="checkbox"] { transform: scale(1.5); margin-right: 15px; cursor: pointer; }
+
+        /* --- SPRITE WINDOW --- */
+        .sprite-wrapper {
+            position: relative;
+            width: 50px;
+            height: 50px;
+            margin-right: 15px;
+            overflow: hidden; 
+            border-radius: 4px;
+            background-color: #222; 
+            flex-shrink: 0;
+            cursor: move; 
+            border: 1px solid #444;
+        }
+
+        .sprite-img {
+            position: absolute;
+            width: 200%; /* Default Zoom */
+            image-rendering: pixelated; 
+            transition: transform 0.05s linear; /* Very fast for responsive scrolling */
+            top: 0;
+            left: 0;
+            transform-origin: top left;
+        }
+
+        .icon-fallback {
+            width: 40px; height: 40px; margin-right: 15px;
+            background-color: #444; color: #888; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 1.2em;
+        }
+
+        .shiny-btn {
+            font-size: 1.5em; margin-right: 15px; cursor: pointer; color: #444; 
+            transition: color 0.2s, text-shadow 0.2s; line-height: 1;
+        }
+        .shiny-btn:hover { color: #666; }
+        .shiny-btn.active { color: #ffd700; text-shadow: 0 0 8px #ffaa00; }
+
+        .name { font-size: 1.3em; font-weight: bold; flex-grow: 1; display: flex; align-items: center;}
+        .caught { color: #888; text-decoration: line-through; opacity: 0.7; }
+        
+        .locations { margin-top: 10px; padding-left: 0; display: none; border-top: 1px solid #555; padding-top: 5px; }
+        .loc-wrapper { border-bottom: 1px solid #444; padding: 8px 5px; }
+        .loc-wrapper:last-child { border-bottom: none; }
+        .loc-line { display: flex; justify-content: space-between; align-items: center; }
+        .loc-text { flex: 1; margin-right: 10px; }
+        
+        .note-toggle-btn {
+            background: transparent; border: 1px solid #f0c040; color: #f0c040;
+            font-size: 0.75em; padding: 2px 8px; border-radius: 12px;
+            cursor: pointer; white-space: nowrap; transition: all 0.2s;
+        }
+        .note-toggle-btn:hover { background-color: #f0c040; color: #222; }
+
+        .note-content {
+            display: none; margin-top: 8px; margin-left: 15px;
+            background-color: #2a2a2a; color: #ddd; padding: 10px;
+            border-left: 3px solid #f0c040; font-size: 0.9em;
+            white-space: pre-wrap; border-radius: 0 4px 4px 0; line-height: 1.4;
+        }
+
+        .show-loc-btn { background: none; border: none; color: #4da6ff; cursor: pointer; margin-left: 10px; font-size: 0.9em; }
+        .show-loc-btn:hover { text-decoration: underline; }
+        #sentinel { height: 50px; text-align: center; padding: 20px; color: #666; font-style: italic; }
+        #error-box { background-color: #ff4444; color: white; padding: 15px; margin-bottom: 20px; border-radius: 8px; display: none; text-align: center; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Reborn Allgen Tracker</h1>
+    <div id="error-box"></div>
+    <input type="text" id="searchInput" class="search-box" placeholder="Search Pokémon..." onkeyup="handleSearch()">
+    <div id="checklist" class="container"></div>
+    <div id="sentinel">Loading more...</div>
+
+    <script src="checklist_data.js"></script>
+    <script src="allgen_data.js"></script>
+
+    <script>
+        const FORM_PREFIXES = [
+            "Alolan ", "Galarian ", "Hisuian ", "Paldean ", 
+            "Mega ", "Primal ", "Hisui ", "Galar ", 
+            "Alola ", "Paldea ", "Partner ", "Blood-"
+        ];
+
+        const errors = [];
+        if (typeof pokemonData === 'undefined') errors.push("checklist_data.js failed to load!");
+        if (typeof allGenData === 'undefined') errors.push("allgen_data.js failed to load!");
+        if (errors.length > 0) {
+            const errDiv = document.getElementById('error-box');
+            errDiv.innerHTML = "⚠️ ISSUES DETECTED:<br>" + errors.join("<br>");
+            errDiv.style.display = 'block';
+        }
+
+        const masterList = {};
+        if (typeof pokemonData !== 'undefined') pokemonData.forEach(p => masterList[p.name] = { ...p });
+
+        if (typeof allGenData !== 'undefined') {
+            allGenData.forEach(p => {
+                if (masterList[p.name]) {
+                    let currentLocs = masterList[p.name].locations;
+                    p.locations.forEach(newLoc => {
+                        if (newLoc.includes("(Egg)")) {
+                            const zoneMatch = newLoc.match(/^([A-Za-z]+)/);
+                            if (zoneMatch) {
+                                const zone = zoneMatch[1];
+                                currentLocs = currentLocs.filter(oldLoc => {
+                                    const isGeneric = oldLoc.includes(zone) && oldLoc.includes("(Event)");
+                                    if (isGeneric) {
+                                        const noteMatch = oldLoc.match(/\[([\s\S]*?)\]/);
+                                        if (noteMatch && !newLoc.includes("[")) newLoc += ` [${noteMatch[1]}]`;
+                                        return false; 
+                                    }
+                                    return true;
+                                });
+                            }
+                        }
+                        if (!currentLocs.includes(newLoc)) currentLocs.push(newLoc);
+                    });
+                    masterList[p.name].locations = currentLocs;
+                    if (p.order < masterList[p.name].order) masterList[p.name].order = p.order;
+                } else {
+                    masterList[p.name] = { ...p };
+                }
+            });
+        }
+
+        const fullSortedData = Object.values(masterList).sort((a, b) => {
+            const orderA = (a.order !== undefined) ? a.order : 99999;
+            const orderB = (b.order !== undefined) ? b.order : 99999;
+            return orderA === orderB ? a.name.localeCompare(b.name) : orderA - orderB;
+        });
+
+        let currentDisplayList = fullSortedData;
+        let renderedCount = 0;
+        const BATCH_SIZE = 50;
+        const listContainer = document.getElementById('checklist');
+        const sentinel = document.getElementById('sentinel');
+        
+        const savedData = JSON.parse(localStorage.getItem('rebornCaught')) || {};
+        const shinyData = JSON.parse(localStorage.getItem('rebornShiny')) || {};
+        const spriteSettings = JSON.parse(localStorage.getItem('rebornSpriteSettings')) || {};
+
+        // --- NEW CENTRAL BRAIN FOR SETTINGS ---
+        function getSpriteSettings(name) {
+            // Return Saved settings if they exist
+            if (spriteSettings[name]) {
+                return { ...spriteSettings[name] }; // Return copy
+            }
+            
+            // Otherwise calculate Defaults (Auto-Guess)
+            const defaults = { y: 0, zoom: 200 };
+            
+            if (name.includes("Hisui") || name.includes("Galar") || name.includes("Alola")) {
+                defaults.y = 20; // Default offset for forms
+            }
+            return defaults;
+        }
+
+        function renderNextBatch() {
+            const end = Math.min(renderedCount + BATCH_SIZE, currentDisplayList.length);
+            if (renderedCount >= currentDisplayList.length) {
+                sentinel.style.display = 'none';
+                return;
+            }
+            sentinel.style.display = 'block';
+
+            const fragment = document.createDocumentFragment();
+
+            for (let i = renderedCount; i < end; i++) {
+                const p = currentDisplayList[i];
+                const div = document.createElement('div');
+                div.className = 'pokemon-item';
+                
+                const header = document.createElement('div');
+                header.className = 'header';
+                
+                // 1. CHECKBOX
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = savedData[p.name] || false;
+                checkbox.onclick = (e) => { e.stopPropagation(); toggleCaught(p.name, checkbox.checked); };
+
+                // 2. SPRITE
+                const settings = getSpriteSettings(p.name);
+
+                const spriteWrapper = document.createElement('div');
+                spriteWrapper.className = 'sprite-wrapper';
+                spriteWrapper.title = 'Scroll: Nudge | Shift+Scroll: Zoom | Click: Cycle';
+                
+                const spriteImg = document.createElement('img');
+                spriteImg.className = 'sprite-img';
+                
+                let fileName = p.name;
+                let isFallback = false;
+                for (let prefix of FORM_PREFIXES) {
+                    if (p.name.startsWith(prefix)) {
+                        fileName = p.name.replace(prefix, "");
+                        isFallback = true;
+                        break;
+                    }
+                }
+                
+                spriteImg.src = `icons/${fileName}.png`;
+                
+                spriteImg.onerror = function() {
+                    if (!isFallback && p.name !== fileName) {
+                        this.src = `icons/${fileName}.png`;
+                        isFallback = true;
+                    } else {
+                        spriteWrapper.style.display = 'none';
+                        const fallback = document.createElement('div');
+                        fallback.className = 'icon-fallback';
+                        fallback.innerText = p.name.charAt(0);
+                        header.insertBefore(fallback, shinyBtn);
+                    }
+                };
+
+                // Apply Initial State
+                spriteImg.style.width = `${settings.zoom}%`;
+                updateSpritePosition(spriteImg, p.name, shinyData[p.name], settings.y);
+
+                // --- CONTROLS ---
+                
+                // CLICK (Cycle)
+                spriteWrapper.onclick = (e) => {
+                    e.stopPropagation();
+                    const s = getSpriteSettings(p.name); // Fetch current state (saved or auto)
+                    s.y = (s.y + 10) % 110; 
+                    saveSettings(p.name, s);
+                    updateSpritePosition(spriteImg, p.name, shinyData[p.name], s.y);
+                };
+
+                // WHEEL (Scroll/Zoom)
+                spriteWrapper.onwheel = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const s = getSpriteSettings(p.name); // Fetch current state (saved or auto)
+
+                    if (e.shiftKey) {
+                        const delta = e.deltaY > 0 ? -10 : 10;
+                        s.zoom = Math.max(50, s.zoom + delta); 
+                        spriteImg.style.width = `${s.zoom}%`;
+                    } else {
+                        const delta = e.deltaY > 0 ? 2 : -2; 
+                        s.y = Math.max(0, Math.min(200, s.y + delta));
+                    }
+                    
+                    saveSettings(p.name, s);
+                    updateSpritePosition(spriteImg, p.name, shinyData[p.name], s.y);
+                };
+
+                spriteWrapper.appendChild(spriteImg);
+
+                // 3. SHINY
+                const shinyBtn = document.createElement('span');
+                shinyBtn.className = 'shiny-btn ' + (shinyData[p.name] ? 'active' : '');
+                shinyBtn.innerHTML = '★';
+                shinyBtn.title = 'Toggle Shiny Sprite';
+                shinyBtn.onclick = (e) => { 
+                    e.stopPropagation(); 
+                    toggleShiny(p.name, shinyBtn, spriteImg); 
+                };
+
+                // 4. NAME & BUTTON
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'name ' + (checkbox.checked ? 'caught' : '');
+                nameSpan.innerText = p.name;
+                
+                const locBtn = document.createElement('button');
+                locBtn.className = 'show-loc-btn';
+                locBtn.innerText = 'Show Locations';
+                
+                header.append(checkbox, spriteWrapper, shinyBtn, nameSpan, locBtn);
+                
+                const locDiv = document.createElement('div');
+                locDiv.className = 'locations';
+                
+                if (p.locations && p.locations.length > 0) {
+                    locDiv.innerHTML = p.locations.map((l, index) => {
+                        let mainText = l;
+                        let noteText = null;
+                        const noteMatch = l.match(/^(.*?) ?\[([\s\S]*?)\]$/);
+                        if (noteMatch) { mainText = noteMatch[1]; noteText = noteMatch[2]; }
+                        if (mainText.endsWith("(Egg)")) {
+                            const clean = mainText.replace(/ ?\(Egg\)$/, '');
+                            if (clean.toLowerCase().includes("egg")) mainText = clean;
+                        }
+                        if (noteText) noteText = noteText.replace(/\\n/g, '\n');
+                        const noteId = `note-${p.name.replace(/\s+/g, '-')}-${index}`;
+                        return `
+                        <div class="loc-wrapper">
+                            <div class="loc-line">
+                                <span class="loc-text">• ${mainText}</span>
+                                ${noteText ? `<button class="note-toggle-btn" onclick="toggleNote('${noteId}')">📝 View Note</button>` : ''}
+                            </div>
+                            ${noteText ? `<div id="${noteId}" class="note-content">${noteText}</div>` : ''}
+                        </div>`;
+                    }).join('');
+                } else {
+                    locDiv.innerHTML = '<div class="loc-wrapper"><div class="loc-line">• No location data available</div></div>';
+                }
+
+                header.onclick = (e) => {
+                    if (e.target !== checkbox && e.target !== shinyBtn && e.target !== spriteWrapper) {
+                            const isHidden = locDiv.style.display === 'none' || locDiv.style.display === '';
+                            locDiv.style.display = isHidden ? 'block' : 'none';
+                            locBtn.innerText = isHidden ? 'Hide Locations' : 'Show Locations';
+                    }
+                };
+
+                div.append(header, locDiv);
+                fragment.appendChild(div);
+            }
+
+            listContainer.appendChild(fragment);
+            renderedCount = end;
+        }
+
+        const observer = new IntersectionObserver(entries => {
+            if (entries[0].isIntersecting) {
+                renderNextBatch();
+            }
+        });
+        observer.observe(sentinel);
+
+        function handleSearch() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            if (!query) {
+                currentDisplayList = fullSortedData;
+            } else {
+                currentDisplayList = fullSortedData.filter(p => p.name.toLowerCase().includes(query));
+            }
+            listContainer.innerHTML = '';
+            renderedCount = 0;
+            sentinel.style.display = 'block';
+            renderNextBatch();
+        }
+
+        function saveSettings(name, settings) {
+            spriteSettings[name] = settings;
+            localStorage.setItem('rebornSpriteSettings', JSON.stringify(spriteSettings));
+        }
+
+        function updateSpritePosition(img, name, isShiny, offsetY) {
+            if (!img) return;
+            const xPos = isShiny ? '-50%' : '0%';
+            const yPos = `-${offsetY}%`;
+            img.style.transform = `translate(${xPos}, ${yPos})`;
+        }
+
+        function toggleShiny(name, btnElement, imgElement) {
+            const isShiny = !shinyData[name];
+            shinyData[name] = isShiny;
+            localStorage.setItem('rebornShiny', JSON.stringify(shinyData));
+            
+            if (isShiny) btnElement.classList.add('active');
+            else btnElement.classList.remove('active');
+
+            const s = getSpriteSettings(name); // Use the smart getter!
+            updateSpritePosition(imgElement, name, isShiny, s.y);
+        }
+
+        function toggleCaught(name, isCaught) {
+            savedData[name] = isCaught;
+            localStorage.setItem('rebornCaught', JSON.stringify(savedData));
+            const allHeaders = document.querySelectorAll('.header');
+            for (let h of allHeaders) {
+                if (h.querySelector('.name').innerText === name) {
+                     const nameSpan = h.querySelector('.name');
+                     if (isCaught) nameSpan.classList.add('caught');
+                     else nameSpan.classList.remove('caught');
+                }
+            }
+        }
+
+        function toggleNote(elementId) {
+            const noteDiv = document.getElementById(elementId);
+            if (noteDiv.style.display === 'block') {
+                noteDiv.style.display = 'none';
+            } else {
+                noteDiv.style.display = 'block';
+            }
+        }
+
+        renderNextBatch();
+    </script>
+</body>
+</html>
